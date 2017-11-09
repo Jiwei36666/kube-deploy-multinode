@@ -236,7 +236,7 @@ kube::multinode::start_k8s_worker() {
     --restart=${RESTART_POLICY} \
     --name kube_kubelet_$(kube::helpers::small_sha) \
     ${KUBELET_MOUNTS} \
-    gcr.io/google_containers/hyperkube-${ARCH}:${K8S_VERSION} \
+    jiwei36666/hyperkube-${ARCH}:${K8S_VERSION} \
     /hyperkube kubelet \
       --allow-privileged \
       --api-servers=http://${MASTER_IP}:8080 \
@@ -245,6 +245,7 @@ kube::multinode::start_k8s_worker() {
       ${CNI_ARGS} \
       ${CONTAINERIZED_FLAG} \
       --hostname-override=${IP_ADDRESS} \
+	  --pod-infra-container-image=jiwei36666/pause-{ARCH}:3.0
       --v=2
 }
 
