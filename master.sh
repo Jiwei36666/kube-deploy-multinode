@@ -33,13 +33,10 @@ if [[ ${USE_CNI} == "true" ]]; then
 
   kube::multinode::start_flannel
 else
-  kube::bootstrap::bootstrap_daemon
 
   kube::multinode::start_etcd
 
   kube::multinode::start_flannel
-
-  kube::bootstrap::restart_docker
 fi
 
 kube::multinode::start_k8s_master

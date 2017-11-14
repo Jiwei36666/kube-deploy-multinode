@@ -64,7 +64,7 @@ kube::multinode::main(){
   CNI_ARGS=""
 
   BOOTSTRAP_DOCKER_SOCK="unix:///var/run/docker-bootstrap.sock"
-  BOOTSTRAP_DOCKER_PARAM="-H ${BOOTSTRAP_DOCKER_SOCK}"
+  BOOTSTRAP_DOCKER_PARAM=""
   ETCD_NET_PARAM="--net host"
 
   if [[ ${USE_CONTAINERIZED} == "true" ]]; then
@@ -82,6 +82,7 @@ kube::multinode::main(){
     -v /sys:/sys:rw \
     -v /var/run:/var/run:rw \
     -v /run:/run:rw \
+    -v /var/lib/docker:/var/lib/docker:rw \
     -v /var/lib/docker:/var/lib/docker:rw \
     ${KUBELET_MOUNT} \
     -v /var/log/containers:/var/log/containers:rw"
@@ -131,7 +132,7 @@ kube::multinode::start_etcd() {
     --restart=${RESTART_POLICY} \
     ${ETCD_NET_PARAM} \
     -v /var/lib/kubelet/etcd:/var/etcd \
-    gcr.io/google_containers/etcd-${ARCH}:${ETCD_VERSION} \
+    jiwei36666/etcd-${ARCH}:${ETCD_VERSION} \
     /usr/local/bin/etcd \
       --listen-client-urls=http://0.0.0.0:2379,http://0.0.0.0:4001 \
       --advertise-client-urls=http://localhost:2379,http://localhost:4001 \
@@ -172,7 +173,7 @@ kube::multinode::start_flannel() {
     --privileged \
     -v /dev/net:/dev/net \
     -v ${FLANNEL_SUBNET_DIR}:${FLANNEL_SUBNET_DIR} \
-    quay.io/coreos/flannel:${FLANNEL_VERSION}-${ARCH} \
+    jiwei36666/flannel:${FLANNEL_VERSION}-${ARCH} \
     /opt/bin/flanneld \
       --etcd-endpoints=http://${MASTER_IP}:2379 \
       --ip-masq="${FLANNEL_IPMASQ}" \
@@ -208,13 +209,14 @@ kube::multinode::start_k8s_master() {
     --restart=${RESTART_POLICY} \
     --name kube_kubelet_$(kube::helpers::small_sha) \
     ${KUBELET_MOUNTS} \
-    gcr.io/google_containers/hyperkube-${ARCH}:${K8S_VERSION} \
+    jiwei36666/hyperkube-${ARCH}:${K8S_VERSION} \
     /hyperkube kubelet \
       --allow-privileged \
       --api-servers=http://localhost:8080 \
       --config=/etc/kubernetes/manifests-multi \
       --cluster-dns=10.0.0.10 \
       --cluster-domain=cluster.local \
+	  --pod-infra-container-image=jiwei36666/pause-${ARCH}:3.0 \
       ${CNI_ARGS} \
       ${CONTAINERIZED_FLAG} \
       --hostname-override=${IP_ADDRESS} \
@@ -236,12 +238,13 @@ kube::multinode::start_k8s_worker() {
     --restart=${RESTART_POLICY} \
     --name kube_kubelet_$(kube::helpers::small_sha) \
     ${KUBELET_MOUNTS} \
-    gcr.io/google_containers/hyperkube-${ARCH}:${K8S_VERSION} \
+    jiwei36666/hyperkube-${ARCH}:${K8S_VERSION} \
     /hyperkube kubelet \
       --allow-privileged \
       --api-servers=http://${MASTER_IP}:8080 \
       --cluster-dns=10.0.0.10 \
       --cluster-domain=cluster.local \
+	  --pod-infra-container-image=jiwei36666/pause-${ARCH}:3.0 \
       ${CNI_ARGS} \
       ${CONTAINERIZED_FLAG} \
       --hostname-override=${IP_ADDRESS} \
@@ -257,7 +260,7 @@ kube::multinode::start_k8s_worker_proxy() {
     --privileged \
     --name kube_proxy_$(kube::helpers::small_sha) \
     --restart=${RESTART_POLICY} \
-    gcr.io/google_containers/hyperkube-${ARCH}:${K8S_VERSION} \
+    jiwei36666/hyperkube-${ARCH}:${K8S_VERSION} \
     /hyperkube proxy \
         --master=http://${MASTER_IP}:8080 \
         --v=2
